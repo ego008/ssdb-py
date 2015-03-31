@@ -204,8 +204,8 @@ class PythonParser(BaseParser):
                 self.on_disconnect()
                 raise socket.error('Socket closed on remote end')
 
-            self.parser.feed(str(buf))
-            chunk = self.parser.get()
+            self._parser.feed(str(buf))
+            chunk = self._parser.get()
             if chunk is not None:
                 return chunk
         """
