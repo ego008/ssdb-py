@@ -6,6 +6,7 @@ import os
 import socket
 import sys
 import threading
+import spp
 from ssdb._compat import (b, xrange, imap, byte_to_chr, unicode, bytes, long,
                            BytesIO, nativestr, basestring,
                            LifoQueue, Empty, Full)
@@ -161,6 +162,7 @@ class PythonParser(BaseParser):
         self.socket_read_size = socket_read_size
         self._sock = None
         self._buffer = None    
+        self._parser = None
 
     def __del__(self):
         try:
@@ -176,6 +178,7 @@ class PythonParser(BaseParser):
         self._buffer = SocketBuffer(self._sock, self.socket_read_size)        
         if connection.decode_responses:
             self.encoding = connection.encoding
+        self._parser = spp.Parser()
             
     def on_disconnect(self):
         "Called when the socket disconnects"
@@ -186,11 +189,26 @@ class PythonParser(BaseParser):
             self._buffer.close()
             self._buffer = None
         self.encoding = None
+        self._parser.clear()
+        self._parser = None
 
     def can_read(self):
         return self._buffer and bool(self._buffer.length)            
 
     def read_response(self):
+        # add
+        while 1:
+            buf = self._sock.recv(4096)
+
+            if not isinstance(buf, bytes) and not len(buf):
+                self.on_disconnect()
+                raise socket.error('Socket closed on remote end')
+
+            self.parser.feed(str(buf))
+            chunk = self.parser.get()
+            if chunk is not None:
+                return chunk
+        """
         try:
             lgt = int(self._buffer.readline())
         except ValueError:
@@ -212,6 +230,7 @@ class PythonParser(BaseParser):
             result.append(value)
 
         return result
+        """
 
 
 DefaultParser = PythonParser
