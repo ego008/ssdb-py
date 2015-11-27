@@ -189,7 +189,8 @@ class PythonParser(BaseParser):
             self._buffer.close()
             self._buffer = None
         self.encoding = None
-        self._parser.clear()
+        if self._parser:
+          self._parser.clear()
         self._parser = None
 
     def can_read(self):
